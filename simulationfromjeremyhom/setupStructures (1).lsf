@@ -1,0 +1,736 @@
+
+
+##############################################################
+# add group
+addstructuregroup;
+set("name","si_group");
+set("x",0);
+set("y",0);
+set("z",0);
+
+
+##################
+# Si side
+##################
+# Geometry conventions:
+# z = 0: top of Si device layer
+# (x,y) = (0,0) end of Si waveguide, start of ARC and then facet
+
+xend_wg = -ltbar/cos(FA);
+yspan = 20e-6;
+xwin = 20e-6;
+zbottom = -20e-6;
+epi_substrate_thickness = 5e-6;
+wtbar = (yspan-wwg)/2; #%Si Tbar extension%;
+
+# handle everywhere:
+addpoly;
+addtogroup("si_group");
+handle = [-xwin, yspan/2; -xwin, -yspan/2; xwin, -yspan/2; xwin, yspan/2];
+set("name","slab");
+set("vertices",handle);
+set("material",Si);
+set("x",0);
+set("y",0);
+set("z min", zbottom);
+set("z max", -hrib-tbox-depth);
+set("alpha",0.5);
+
+# Substrate under wavegude:
+addpoly;
+addtogroup("si_group");
+substrate = [-xwin, yspan/2; -xwin, -yspan/2; -yspan/2*tan(FA), -yspan/2; yspan/2*tan(FA), yspan/2];
+set("name","slab");
+set("vertices",substrate);
+set("material",Si);
+set("x",0);
+set("y",0);
+set("z min", -hrib-tbox-depth);
+set("z max", -hrib-tbox);
+set("alpha",0.5);
+
+# BOX
+addpoly;
+addtogroup("si_group");
+BOX = [-xwin, yspan/2; -xwin, -yspan/2; -yspan/2*tan(FA), -yspan/2; yspan/2*tan(FA), yspan/2];
+set("name","BOX");
+set("vertices",BOX);
+set("material",SiO2);
+set("x",0);
+set("y",0);
+set("z min", -hrib-tbox);
+set("z max", -hrib);
+set("alpha",0.5);
+
+# Slab under waveguide
+addpoly;
+addtogroup("si_group");
+slab = [-xwin, yspan/2; -xwin, -yspan/2; -yspan/2*tan(FA), -yspan/2; yspan/2*tan(FA), yspan/2];
+set("name","slab");
+set("vertices",slab);
+set("material",Si);
+set("x",0);
+set("y",0);
+set("z min", -hrib);
+set("z max", -hrib+hslab);
+set("alpha",0.5);
+
+# T-bar
+addpoly;
+addtogroup("si_group");
+tbar = [xend_wg + (wwg+2*wtbar)/2*tan(FA), (wwg+2*wtbar)/2;
+(wwg+2*wtbar)/2*tan(FA), (wwg+2*wtbar)/2;
+-(wwg+2*wtbar)/2*tan(FA), -(wwg+2*wtbar)/2;
+xend_wg - (wwg+2*wtbar)/2*tan(FA),-(wwg+2*wtbar)/2];
+set("name","tbar");
+set("vertices",tbar);
+set("material",Si);
+set("x",0);
+set("y",0);
+set("z min", -hrib);
+set("z max", 0);
+set("alpha",0.8);
+
+# Waveguide
+addpoly;
+addtogroup("si_group");
+wg = [-xwin, wwg/2/cos(FA4) - xwin*tan(FA4); -xwin, -wwg/2/cos(FA4) - xwin*tan(FA4); xend_wg - wwg/2*sin(FA)/cos(-FA-FA4), -wwg/2/cos(-FA-FA4)*cos(FA); xend_wg + wwg/2*sin(FA)/cos(-FA-FA4), wwg/2/cos(-FA-FA4)*cos(FA)];
+#wg = [-xwin, wwg/2/cos(FA4) - xwin*tan(FA4); -xwin, -wwg/2/cos(FA4) - xwin*tan(FA4); xend_wg - wwg/2*tan(FA)/cos(FA4), -wwg/2; xend_wg + wwg/2*tan(FA)/cos(FA4), wwg/2];
+set("name","waveguide");
+set("vertices",wg);
+set("material",Si);
+set("x",0);
+set("y",0);
+set("z min", -hrib+hslab);
+set("z max", 0);
+set("alpha",0.8);
+
+
+# ARC (assume no oxide cladding for now):
+ARCb = [yspan/2*tan(FA),yspan/2; xwin, yspan/2; xwin, -yspan/2; -yspan/2*tan(FA), -yspan/2];
+addpoly;
+addtogroup("si_group");
+set("name","ARCb");
+set("vertices",ARCb);
+set("index",nARC);
+set("x",0);
+set("y",0);
+set("z min",-hrib-tbox-depth);
+set("z max",-hrib-tbox-depth+tARC);
+set("alpha",0.5);
+
+if(add_oxide_liner){
+  
+  
+addpoly;
+addtogroup("si_group");
+liner1 = [-yspan/2*tan(FA), -yspan/2; -yspan/2*tan(FA) + oxide_liner_thickness/cos(FA), -yspan/2;
+yspan/2*tan(FA) + oxide_liner_thickness/cos(FA), yspan/2; yspan/2*tan(FA), yspan/2];
+set("name","Si oxide liner");
+set("vertices",liner1);
+set("index",n_liner);
+set("x",0);
+set("y",0);
+set("z min",-hrib-tbox-depth);
+set("z max",0);
+set("alpha",0.2);  
+  
+addpoly;
+addtogroup("si_group");
+ARCs1 = [-yspan/2*tan(FA)+ oxide_liner_thickness/cos(FA), -yspan/2; -yspan/2*tan(FA) + (tARC+oxide_liner_thickness)/cos(FA), -yspan/2;
+yspan/2*tan(FA) + (tARC+oxide_liner_thickness)/cos(FA), yspan/2; yspan/2*tan(FA)+ oxide_liner_thickness/cos(FA), yspan/2];
+set("name","ARCs1");
+set("vertices",ARCs1);
+set("index",nARC);
+set("x",0);
+set("y",0);
+set("z min",-hrib-tbox-depth);
+set("z max",-hrib+hslab);
+set("alpha",0.5);
+
+addpoly;
+addtogroup("si_group");
+warc = wwg+wtbar*2;
+ARCs2 = [-warc/2*tan(FA)+ oxide_liner_thickness/cos(FA), -warc/2; -warc/2*tan(FA) + (tARC+oxide_liner_thickness)/cos(FA), -warc/2; 
+ warc/2*tan(FA) + (tARC+oxide_liner_thickness)/cos(FA), warc/2; warc/2*tan(FA)+ oxide_liner_thickness/cos(FA), warc/2];
+set("name","ARCs2");
+set("vertices",ARCs2);
+set("index",nARC);
+set("x",0);
+set("y",0);
+set("z min",-hrib+hslab);
+set("z max",0);
+set("alpha",0.5);  
+  
+  
+  
+    
+}
+else {
+
+addpoly;
+addtogroup("si_group");
+ARCs1 = [-yspan/2*tan(FA), -yspan/2; -yspan/2*tan(FA) + tARC/cos(FA), -yspan/2;
+yspan/2*tan(FA) + tARC/cos(FA), yspan/2; yspan/2*tan(FA), yspan/2];
+set("name","ARCs1");
+set("vertices",ARCs1);
+set("index",nARC);
+set("x",0);
+set("y",0);
+set("z min",-hrib-tbox-depth);
+set("z max",-hrib+hslab);
+set("alpha",0.5);
+
+addpoly;
+addtogroup("si_group");
+warc = wwg+wtbar*2;
+ARCs2 = [-warc/2*tan(FA), -warc/2; -warc/2*tan(FA) + tARC/cos(FA), -warc/2;
+  warc/2*tan(FA) + tARC/cos(FA), warc/2; warc/2*tan(FA), warc/2];
+set("name","ARCs2");
+set("vertices",ARCs2);
+set("index",nARC);
+set("x",0);
+set("y",0);
+set("z min",-hrib+hslab);
+set("z max",0);
+set("alpha",0.5);
+
+}
+
+
+# oxide cladding on Si rib
+addpoly; addtogroup("si_group");
+clad1 = [-xwin, wwg/2/cos(FA4)+hclad - xwin*tan(FA4); -xwin, wwg/2/cos(FA4) - xwin*tan(FA4);xend_wg + wwg/2*sin(FA)/cos(-FA-FA4), wwg/2/cos(-FA-FA4)*cos(FA); xend_wg + (wwg/2+hclad)*sin(FA)/cos(-FA-FA4), (wwg/2+hclad)/cos(-FA-FA4)*cos(FA)];
+#clad1 = [-xwin, wwg/2/cos(FA4)+hclad - xwin*tan(FA4); -xwin, wwg/2/cos(FA4) - xwin*tan(FA4); xend_wg + wwg/2*tan(FA), wwg/2; xend_wg + (wwg/2+hclad)*tan(FA), wwg/2+hclad];
+set("name","Si ox clad side up");
+set("vertices",clad1);
+set("material",SiO2);
+set("x",0);
+set("y",0);
+set("z min", -hrib+hslab);
+set("z max", hclad);
+set("alpha",0.8);
+
+addpoly; addtogroup("si_group");
+wg = [-xwin, wwg/2/cos(FA4) - xwin*tan(FA4); -xwin, -wwg/2/cos(FA4) - xwin*tan(FA4); xend_wg - wwg/2*sin(FA)/cos(-FA-FA4), -wwg/2/cos(-FA-FA4)*cos(FA); xend_wg + wwg/2*sin(FA)/cos(-FA-FA4), wwg/2/cos(-FA-FA4)*cos(FA)];
+set("name","Si ox clad top");
+set("vertices",wg);
+set("material",SiO2);
+set("x",0);
+set("y",0);
+set("z min", 0);
+set("z max", hclad);
+set("alpha",0.8);
+
+addpoly; addtogroup("si_group");
+clad2 = [-xwin, -wwg/2/cos(FA4)-hclad - xwin*tan(FA4); -xwin, -wwg/2/cos(FA4) - xwin*tan(FA4); xend_wg - wwg/2*sin(FA)/cos(-FA-FA4), -wwg/2/cos(-FA-FA4)*cos(FA); xend_wg - (wwg/2+hclad)*sin(FA)/cos(-FA-FA4), -(wwg/2+hclad)/cos(-FA-FA4)*cos(FA)];
+set("name","Si ox clad side down");
+set("vertices",clad2);
+set("material",SiO2);
+set("x",0);
+set("y",0);
+set("z min", -hrib+hslab);
+set("z max", hclad);
+set("alpha",0.8);
+
+
+
+addpoly; addtogroup("si_group");
+clad3 = [-xwin, yspan/2; -xwin, wwg/2/cos(FA4) - xwin*tan(FA4); xend_wg + wwg/2*sin(FA)/cos(-FA-FA4), wwg/2/cos(-FA-FA4)*cos(FA); xend_wg + (yspan/2)*tan(FA), yspan/2];
+set("name","Si ox clad plane up");
+set("vertices",clad3);
+set("material",SiO2);
+set("x",0);
+set("y",0);
+set("z min", -hrib+hslab);
+set("z max", -hrib+hslab+hclad);
+set("alpha",0.8);
+
+addpoly; addtogroup("si_group");
+clad4 = [-xwin, -yspan/2; -xwin, -wwg/2/cos(FA4) - xwin*tan(FA4); xend_wg - wwg/2*sin(FA)/cos(-FA-FA4), -wwg/2/cos(-FA-FA4)*cos(FA); xend_wg - (yspan/2)*tan(FA), -yspan/2];
+set("name","Si ox clad plane down");
+set("vertices",clad4);
+set("material",SiO2);
+set("x",0);
+set("y",0);
+set("z min", -hrib+hslab);
+set("z max", -hrib+hslab+hclad);
+set("alpha",0.8);
+
+
+addpoly; addtogroup("si_group");
+cladT1 = [xend_wg + wwg/2*tan(FA)-hclad/cos(FA), wwg/2 - hclad*tan(FA4) ; xend_wg + wwg/2*tan(FA), wwg/2; xend_wg + (wwg+2*wtbar)/2*tan(FA), (wwg+2*wtbar)/2; xend_wg + (yspan/2)*tan(FA)-hclad/cos(FA), warc/2];
+#cladT1 = [xend_wg + wwg/2*tan(FA)-hclad/cos(FA), wwg/2 - hclad*tan(FA4) ; xend_wg + wwg/2*tan(FA), wwg/2;  xend_wg + (yspan/2)*tan(FA), warc/2; xend_wg + (yspan/2)*tan(FA)-hclad/cos(FA), warc/2];
+set("name","Si ox Tbar up");
+set("vertices",cladT1);
+set("material",SiO2);
+set("x",0);
+set("y",0);
+set("z min", -hrib+hslab);
+set("z max", hclad);
+set("alpha",0.8);
+
+addpoly; addtogroup("si_group");
+cladT1 = [xend_wg - wwg/2*tan(FA)-hclad/cos(FA), -wwg/2 - hclad*tan(FA4); xend_wg - wwg/2*tan(FA), -wwg/2;  xend_wg - (wwg+2*wtbar)/2*tan(FA),-(wwg+2*wtbar)/2; xend_wg - (yspan/2)*tan(FA)-hclad/cos(FA), -warc/2];
+set("name","Si ox Tbar down");
+set("vertices",cladT1);
+set("material",SiO2);
+set("x",0);
+set("y",0);
+set("z min", -hrib+hslab);
+set("z max", hclad);
+set("alpha",0.8);
+
+addpoly; addtogroup("si_group");
+tbar = [xend_wg + (wwg+2*wtbar)/2*tan(FA), (wwg+2*wtbar)/2;
+(wwg+2*wtbar)/2*tan(FA), (wwg+2*wtbar)/2;
+-(wwg+2*wtbar)/2*tan(FA), -(wwg+2*wtbar)/2;
+xend_wg - (wwg+2*wtbar)/2*tan(FA),-(wwg+2*wtbar)/2];
+set("name","tbar oxide clad");
+set("vertices",tbar);
+set("material",SiO2);
+set("x",0);
+set("y",0);
+set("z min", 0);
+set("z max", hclad);
+set("alpha",0.8);
+
+
+if(disable_silicon){
+    select('si_group');
+    set('enabled',0);
+}
+
+
+
+
+##################
+# III-V side
+##################
+
+# add group
+addstructuregroup;
+set("name","epi_group");
+set("x",0);
+set("y",0);
+set("z",0);
+
+
+# epi structure:
+
+s = designs{design_num};
+
+#?'III-V etch depth' s.etch_depth; # IIIV WG etch depth
+well_height = s.qw_center_position; # thickness of QW stack
+
+# zstart is the top surface of epi growth (i.e. the bottom after flip-chip bonding)
+# qw_center is the distance from top of Si WG to center of QW stack
+zstart = -hrib + total_pillar_height - s.etch_depth; # -3e-6 + total_pillar_height;
+
+QW_center_height_above_BOX = total_pillar_height + s.qw_center_position - s.etch_depth;
+?"QW center height above BOX: " + num2str(QW_center_height_above_BOX);
+
+Nlayers = length(s.L);
+xstart = gap-yShift*tan(FA2);
+
+epi_tbar_length = 1e-6;
+verts = [xstart - yspan/2*tan(FA2), -yspan/2; xwin, -yspan/2; xwin, yspan/2; xstart + yspan/2*tan(FA2), yspan/2];
+
+if(epi_pside_down==1){
+    ?"using epi p-side down"; # the p metal will only cover the top here for simplicity
+    zpos = zstart;
+    for(ind = 1:Nlayers){
+        addpoly;
+        addtogroup("epi_group");
+        set("name",s.names{ind});
+        set("vertices",verts);
+        set("x",0);
+        set("y",0);
+        set("z min",zpos);
+        zpos = zpos + s.L(ind);
+        set("z max",zpos);
+        set("index",s.neff(ind));
+        set("alpha",0.02);
+        
+        if(override_SCH){
+            # check if this layer is an SCH1 layer.  If so, override thickness.
+            if(s.names{ind} == "SCH1"){
+                zpos = zpos - s.L(ind) + SCH1_ht;
+                set("z max",zpos);
+            }
+            
+            if(s.names{ind} == "SCH2"){
+                zpos = zpos - s.L(ind) + SCH2_ht;
+                set("z max",zpos);
+            }
+        }
+        
+        
+    }
+    
+    
+    # Add III-V substrate
+    ?epi_thickness_check = zpos-zstart;
+    epi_z_top = zpos+epi_substrate_thickness;
+    addpoly;
+    addtogroup("epi_group");
+    set("name","epi substrate");
+    set("vertices",verts);
+    set("x",0);
+    set("y",0);
+    set("z min",zpos);
+    set("z max",epi_z_top);
+    set("index",s.neff(ind));
+    set("alpha",0.5);
+    
+    # Add III-V ARC
+    if(add_oxide_liner){
+        
+        
+    addpoly;
+    addtogroup("epi_group");
+    liner2 = [xstart - yspan/2*tan(FA2), -yspan/2; xstart + yspan/2*tan(FA2), yspan/2;
+    xstart + yspan/2*tan(FA2) - oxide_liner_thickness/cos(FA2), yspan/2;
+    xstart - yspan/2*tan(FA2) - oxide_liner_thickness/cos(FA2), -yspan/2];
+    set("name","epi oxide liner");
+    set("vertices",liner2);
+    set("x",0);
+    set("y",0);
+    set("z min",zstart);
+    set("z max",epi_z_top);
+    set("index",n_liner);
+    set("alpha",0.2);    
+    
+    
+    addpoly;
+    addtogroup("epi_group");
+    ARC2 = [xstart - yspan/2*tan(FA2)- oxide_liner_thickness/cos(FA2), 
+    -yspan/2; xstart + yspan/2*tan(FA2)- oxide_liner_thickness/cos(FA2), yspan/2;
+    xstart + yspan/2*tan(FA2) - (tARC2+oxide_liner_thickness)/cos(FA2), yspan/2;
+    xstart - yspan/2*tan(FA2) - (tARC2+oxide_liner_thickness)/cos(FA2), -yspan/2];
+    set("name","epi ARC SiNx");
+    set("vertices",ARC2);
+    set("x",0);
+    set("y",0);
+    set("z min",zstart);
+    set("z max",epi_z_top);
+    set("index",nARC2);
+    set("alpha",0.5);        
+        
+    }
+    else{
+    addpoly;
+    addtogroup("epi_group");
+    ARC2 = [xstart - yspan/2*tan(FA2), -yspan/2; xstart + yspan/2*tan(FA2), yspan/2;
+    xstart + yspan/2*tan(FA2) - tARC2/cos(FA2), yspan/2;
+    xstart - yspan/2*tan(FA2) - tARC2/cos(FA2), -yspan/2];
+    set("name","epi ARC SiNx");
+    set("vertices",ARC2);
+    set("x",0);
+    set("y",0);
+    set("z min",zstart);
+    set("z max",epi_z_top);
+    set("index",nARC2);
+    set("alpha",0.5);
+    
+    ## Add III-V ARC
+    #addpoly;
+    #addtogroup("epi_group");
+    #ARC3 = [xstart - yspan/2*tan(FA2)- tARC2/cos(FA2), -yspan/2; xstart + yspan/2*tan(FA2)- tARC2/cos(FA2), yspan/2;
+    #xstart + yspan/2*tan(FA2) - (tARC2+tARC3)/cos(FA2), yspan/2;
+    #xstart - yspan/2*tan(FA2) - (tARC2+tARC3)/cos(FA2), -yspan/2];
+    #set("name","epi ARC SiO2");
+    #set("vertices",ARC3);
+    #set("x",0);
+    #set("y",0);
+    #set("z min",zstart);
+    #set("z max",epi_z_top);
+    #set("index",nARC3);
+    #set("alpha",0.5);
+    
+    }
+    
+    # Add waveguide etches
+  
+    if(is_BH){
+        
+        xwg2 = gap;
+        ytopetch = ywg2 + wwg2/2;
+        ybotetch = ywg2 - wwg2/2;
+        topetch = [xwg2 + wwg2/2*tan(FA2), ytopetch; xwin, ytopetch + ( xwin - xwg2 - wwg2/2*tan(FA2) )*tan(FA3); xwin, yspan/2; xwg2 + (yspan/2 - ywg2)*tan(FA2), yspan/2];
+        botetch = [xwg2 - wwg2/2*tan(FA2), ybotetch; xwin, ybotetch + ( xwin - xwg2 - wwg2/2*tan(FA2) )*tan(FA3); xwin, -yspan/2; xwg2 - (yspan/2 + ywg2)*tan(FA2), -yspan/2];
+        
+        addpoly;
+        addtogroup("epi_group");
+        set("name","top InP refill");
+        set("vertices",topetch);
+        set("x",0);
+        set("y",0);
+        set("z min",zstart);
+        set("z max",epi_z_top);
+        set("index",s.neff(2));
+        set("alpha",1);
+        set("override mesh order from material database",1); # add this to give cladding precedence over etch.
+        set("mesh order",1);
+        
+        addpoly;
+        addtogroup("epi_group");
+        set("name","bottom InP refill");
+        set("vertices",botetch);
+        set("x",0);
+        set("y",0);
+        set("z min",zstart);
+        set("z max",epi_z_top);
+        set("index",s.neff(2));
+        set("alpha",1);
+        set("override mesh order from material database",1); # add this to give cladding precedence over etch.
+        set("mesh order",1);
+        
+    }
+    else{
+        xwg2 = xstart + ltbar2/cos(FA2);
+        ytopetch = ywg2 + wwg2/2;
+        ybotetch = ywg2 - wwg2/2;
+        topetch = [xwg2 + wwg2/2*tan(FA2), ytopetch; xwin, ytopetch + ( xwin - xwg2 - wwg2/2*tan(FA2) )*tan(FA3); xwin, yspan/2; xwg2 + (yspan/2 - ywg2)*tan(FA2), yspan/2];
+        botetch = [xwg2 - wwg2/2*tan(FA2), ybotetch; xwin, ybotetch + ( xwin - xwg2 - wwg2/2*tan(FA2) )*tan(FA3); xwin, -yspan/2; xwg2 - (yspan/2 + ywg2)*tan(FA2), -yspan/2];
+        
+        
+        addpoly;
+        addtogroup("epi_group");
+        set("name","top etch");
+        set("vertices",topetch);
+        set("x",0);
+        set("y",0);
+        set("z min",zstart);
+        set("z max",zstart+s.etch_depth);
+        set("material","etch");
+        set("alpha",1);
+        
+        addpoly;
+        addtogroup("epi_group");
+        set("name","bottom etch");
+        set("vertices",botetch);
+        set("x",0);
+        set("y",0);
+        set("z min",zstart);
+        set("z max",zstart+s.etch_depth);
+        set("material","etch");
+        set("alpha",1);
+        
+        
+        # Add IIIV Oxide Cladding
+        topclad = [xwg2 + wwg2/2*tan(FA2), ytopetch; xwin, ytopetch + ( xwin - xwg2 - wwg2/2*tan(FA2) )*tan(FA3); xwin, ytopetch + ( xwin - xwg2 - wwg2/2*tan(FA2) )*tan(FA3)+epi_ox_th/cos(FA3)  ; xwg2 + (wwg2/2+epi_ox_th)*tan(FA2), ytopetch+epi_ox_th/cos(FA3)];
+        botclad = [xwg2 - wwg2/2*tan(FA2), ybotetch; xwin, ybotetch + ( xwin - xwg2 - wwg2/2*tan(FA2) )*tan(FA3); xwin, ybotetch + ( xwin - xwg2 - wwg2/2*tan(FA2) )*tan(FA3)-epi_ox_th/cos(FA3); xwg2 - (wwg2/2+epi_ox_th)*tan(FA2), ybotetch-epi_ox_th/cos(FA3)];
+        
+        
+        addpoly; addtogroup("epi_group");
+        set("name","top clad sidewall");
+        set("vertices",topclad);
+        set("x",0);
+        set("y",0);
+        set("z min",zstart);
+        set("z max",zstart+s.etch_depth);
+        set("material",SiO2);
+        set("alpha",1);
+        set("override mesh order from material database",1); # add this to give cladding precedence over etch.
+        set("mesh order",1); # add this to give cladding precedence over etch.
+        
+        addpoly; addtogroup("epi_group");
+        set("name","bottom clad sidewall");
+        set("vertices",botclad);
+        set("x",0);
+        set("y",0);
+        set("z min",zstart);
+        set("z max",zstart+s.etch_depth);
+        set("material",SiO2);
+        set("alpha",1);
+        set("override mesh order from material database",1); # add this to give cladding precedence over etch.
+        set("mesh order",1); # add this to give cladding precedence over etch.
+        
+        addpoly; addtogroup("epi_group");
+        set("name","IIIV top clad plane");
+        set("vertices",topetch);
+        set("x",0);
+        set("y",0);
+        set("z min",zstart+s.etch_depth-epi_ox_th);
+        set("z max",zstart+s.etch_depth);
+        set("material",SiO2);
+        set("alpha",1);
+        set("override mesh order from material database",1); # add this to give cladding precedence over etch.
+        set("mesh order",1); # add this to give cladding precedence over etch.
+        
+        addpoly; addtogroup("epi_group");
+        set("name","IIIV bottom clad plane");
+        set("vertices",botetch);
+        set("x",0);
+        set("y",0);
+        set("z min",zstart+s.etch_depth-epi_ox_th);
+        set("z max",zstart+s.etch_depth);
+        set("material",SiO2);
+        set("alpha",1);
+        set("override mesh order from material database",1); # add this to give cladding precedence over etch.
+        set("mesh order",1); # add this to give cladding precedence over etch.
+        
+        addpoly; addtogroup("epi_group");
+        TbarSide = [xwg2 + wwg2/2*tan(FA2), ytopetch;
+        xwg2 + (yspan/2 - ywg2)*tan(FA2), yspan/2;
+        xwg2 + (yspan/2 - ywg2)*tan(FA2) +epi_ox_th/cos(FA2), yspan/2;
+        xwg2 + wwg2/2*tan(FA2) +epi_ox_th/cos(FA2), ytopetch+epi_ox_th/cos(FA2)*tan(FA3)];
+        
+        
+        set("name","IIIV oxide on Tbar sidewall top");
+        set("vertices",TbarSide);
+        set("x",0);
+        set("y",0);
+        set("z min",zstart);
+        set("z max",zstart+s.etch_depth);
+        set("index",SiO2);
+        set("alpha",0.5);
+        set("override mesh order from material database",1); # add this to give cladding precedence over etch.
+        set("mesh order",1); # add this to give cladding precedence over etch.
+        
+        addpoly; addtogroup("epi_group");
+        TbarSide = [xwg2 - wwg2/2*tan(FA2), ybotetch;
+        xwg2 - (yspan/2 + ywg2)*tan(FA2) , -yspan/2;
+        xwg2 - (yspan/2 + ywg2)*tan(FA2) +epi_ox_th/cos(FA2), -yspan/2;
+        xwg2 - wwg2/2*tan(FA2) +epi_ox_th/cos(FA2), ybotetch+epi_ox_th/cos(FA2)*tan(FA3)];
+        set("name","IIIV oxide on Tbar sidewall bot");
+        set("vertices",TbarSide);
+        set("x",0);
+        set("y",0);
+        set("z min",zstart);
+        set("z max",zstart+s.etch_depth);
+        set("index",SiO2);
+        set("alpha",0.5);
+        set("override mesh order from material database",1); # add this to give cladding precedence over etch.
+        set("mesh order",1); # add this to give cladding precedence over etch.
+        
+    }
+    
+}
+
+
+if (arch == 'Arch2'){
+    select('epi_group');
+    set("y",tan(FA3)*ltbar2); # this shifts the epi so that a y-shift of 0 means the Si waveguide and epi waveguide AT THE TBAR FACET are aligned
+}
+
+
+
+######################
+## Setup Simulation
+######################
+
+# set global monitor properties
+setglobalmonitor("frequency points",numFreqPoint);
+
+
+# add FDTD
+addfdtd;
+set("dimension","3D");
+set("x min",fdtd_x_min);
+set("x max",fdtd_x_max);/Users/qwang/Downloads/simulationfromjeremyhom/setupStructures (1).lsf
+set("z min",fdtd_z_min);
+set("z max",fdtd_z_max);
+set("y min",fdtd_y_min);
+set("y max",fdtd_y_max);
+#set("y",0);
+#set("y span",fdtd_y_max - fdtd_y_min);
+
+set("mesh accuracy",mesh_accuracy);
+set("mesh refinement",mesh_type);
+set("pml type",pml_type);
+set("mesh refinement",mesh_type);
+set("snap pec to yee cell boundary",0);
+
+
+
+# add ports
+setglobalsource("wavelength start", (  epi_centerWavelength - 25e-9 )  );
+setglobalsource("wavelength stop", (  epi_centerWavelength + 25e-9 )   );
+
+# set port IIIV ridge wvg
+addport;
+set("x",fdtd_x_max-1.5e-6);
+set("y min",fdtd_y_min + 1e-6);
+set("y max",fdtd_y_max - 1e-6);
+set("z",-1.5e-6);
+set("z span",7e-6);
+set("theta",FA3/pi*180);
+set("injection axis","x");
+set("direction","Backward");
+select("FDTD::ports::port 1"); # select the port group
+set("name","IIIV Ridge");
+set("mode selection","fundamental TE mode");
+
+
+# Set Port Si rib wvg
+addport;
+set("injection axis","x");
+set("direction","Forward");
+set("x",fdtd_x_min+800e-9);
+set("y",0e-6);
+set("y min",fdtd_y_min + 1e-6);
+set("y max",fdtd_y_max - 1e-6);
+#set("y span",9e-6);
+set("z",-1.5e-6);
+set("z span",7e-6);
+select("FDTD::ports::port 2"); # select the port group
+set("name","Si Rib TE");
+set("mode selection","fundamental TE mode");
+set("theta",FA4/pi*180);
+#updateportmodes; # initial modes seem to be wrong.  Run this to refresh
+
+addport;
+set("injection axis","x");
+set("direction","Forward");
+set("x",fdtd_x_min+800e-9);
+set("y",0e-6);
+set("y min",fdtd_y_min + 1e-6);
+set("y max",fdtd_y_max - 1e-6);
+#set("y span",9e-6);set("z",-1.5e-6);
+set("z span",7e-6);
+select("FDTD::ports::port 3"); # select the port group
+set("name","Si Rib TM");
+set("mode selection","fundamental TM mode");
+set("theta",FA4/pi*180);
+#updateportmodes; # initial modes seem to be wrong.  Run this to refresh
+
+# refine mesh in the epi QW region:
+if( refine_mesh_in_QW_region){
+    addmesh;
+    set("name","QW_fine_mesh");
+    set("override x mesh",0);
+    set("override y mesh",0);
+    set("override z mesh",1);
+    set("dz", 10e-9);
+    set("x min",fdtd_x_min);
+    set("x max",fdtd_x_max);
+    set("y",0);
+    set("y span",fdtd_y_max - fdtd_y_min);
+    set("z", -hrib + QW_center_height_above_BOX); # center mesh refinement on QW region
+    set("z span", 150e-9);
+}
+
+# refine mesh in the gap region:
+if( refine_mesh_in_gap_region){
+    addmesh;
+    set("name","gap_fine_mesh");
+    set("override x mesh",1);
+    set("override y mesh",0);
+    set("override z mesh",0);
+    set("dx", 25e-9);
+    set("x min",-hclad);
+    set("x max",xstart+hclad);
+    set("y min",fdtd_y_min);
+    set("y max",fdtd_y_max);
+    set("z min", fdtd_z_min);
+    set("z max", fdtd_z_max);
+}
+
+
+# shift structure down by yShift/2 relative to FDTD to center better
+select("si_group");
+set("y", -yShift/2);
+select("epi_group");
+set("y", -yShift/2);

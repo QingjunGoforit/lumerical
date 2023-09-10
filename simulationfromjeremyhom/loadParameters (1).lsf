@@ -1,0 +1,111 @@
+#########
+n_gap = gapIndex; #%gap fill index%;
+ywg2 = yShift; #%epi waveguide y shift%;
+#########
+
+numFreqPoint = 11;
+
+
+
+pml_type = "stretched coordinate PML";
+mesh_type = "conformal variant 0";
+#pml_numLayers = [64,64,64,64,8,8];
+
+
+
+# User set properties and some constants
+
+#if (arch == 'output'){
+    #wwg = 3e-6; # %Si wg width%;
+#}
+#else{
+        #wwg = 2.6e-6; # %Si wg width%;
+#}
+
+    
+hrib =  3e-6;#%Si wg thickness%;
+hslab = 1.8e-6; #%Si slab thickness%;
+tbox =  1e-6;#%Si BOX thickness%;
+ltbar = 1e-6; #%Si Tbar length%;
+depth =  3.5e-6;#%cavity depth%;  # defined as depth below BOX
+oxide_on = 1; #%oxide cladding%;
+hclad =  0.5e-6;#%cladding thickness%;
+
+nARC =  1.98;#%Si ARC index%;
+tARC =  0.29e-6;#%Si ARC thickness%;
+
+
+Si = "Si (Silicon) - Palik" ;#%Si WG material%;
+SiO2 = "SiO2 (Glass) - Palik";  #%BOX material%;
+
+matlabload(growthsheet);
+epi_pside_down = 1;
+epi_centerWavelengths = [1423,1475,1528, 1585, 1645, 1709, 1777, 1845, 2050, 2115, 2168, 2219, 2270, 2318, 2363]*1e-9;
+epi_centerWavelength = epi_centerWavelengths(design_num);
+
+# epi ARC coating parameters, roughly optimized for each wavelength, provide by Tahiti.
+##Ta2O5
+#nARC2 =  2.08;
+#all_tARC2s = [120, 125, 130, 134, 140, 146, 151, 156, 176, 180, 184, 190, 194, 198, 200]*1e-9;
+#tARC2 = all_tARC2s(design_num);
+##SiO2
+#nARC3 =  1.44;
+#all_tARC3s = [150, 160, 165, 170, 177, 184, 192, 200, 220, 225, 235, 239, 245, 250, 250]*1e-9;
+#tARC3 = all_tARC3s(design_num);
+
+# thickness values from Venus
+nARC2 =  1.92;
+all_tARC2s = [185, 192, 199, 206, 214, 223, 231, 240, 259, 267, 275, 282, 289, 296, 308]*1e-9;
+tARC2 = all_tARC2s(design_num);
+
+ltbar2 = 3e-6; #%epi Tbar length%;
+#wwg2 =  2.6e-6;#%epi waveguide width%;
+#qw_center = 1.813e-6; #QW center position;
+epi_ox_th = 300e-9;
+
+# set wg and facet angles
+if (arch == 'Arch3'){
+    FA = pi/180* 10; #%Si facet angle%;
+    FA2 = pi/180* 10; #%epi facet angle%;
+    FA3 = pi/180*0; # IIIV WG Tilt
+    FA4 = pi/180*0; # Si WG Tilt
+    }
+else if (arch == 'Arch2'){ # Arch 2
+    FA = pi/180* 8.67; #%Si facet angle%;
+    FA2 = pi/180* 0; #%epi facet angle%;
+    FA3 = pi/180*7; # IIIV WG Tilt
+    FA4 = pi/180*0; # Si WG Tilt
+
+}
+else if (arch == 'output'){
+    FA = pi/180* 22; #%Si facet angle%;
+    FA2 = pi/180* 0; #%epi facet angle%;
+    FA3 = pi/180*0; # IIIV WG Tilt
+    FA4 = pi/180*(-22+6); # Si WG Tilt    
+}
+
+
+#use_epi_etch_depth =  1;#%etch depth from epi structure%;
+#override_etch_depth = 1.65e-6; #%epi etch depth%;
+
+#gap =  gapDistance + tARC/cos(FA) + (tARC2 + tARC3)/cos(FA2);#%coupling gap%;
+gap =  gapDistance + tARC/cos(FA) + (tARC2)/cos(FA2);#%coupling gap%;
+
+
+# FDTD region
+if (arch == 'output'){
+fdtd_x_min = -6.5e-6;
+fdtd_x_max = 6e-6;
+fdtd_y_min = -7e-6;
+fdtd_y_max = 7e-6;
+fdtd_z_min = -6e-6;
+fdtd_z_max = 3e-6;
+}
+else {
+fdtd_x_min = -4e-6;
+fdtd_x_max = 4e-6 + gapDistance + ltbar2;
+fdtd_y_min = -7e-6;
+fdtd_y_max = 7e-6;
+fdtd_z_min = -5e-6;
+fdtd_z_max = 2e-6;
+}

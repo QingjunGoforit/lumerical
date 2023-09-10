@@ -1,0 +1,208 @@
+switchtolayout;
+deleteall;
+clear;
+centerWavelength=1.56061e-6;
+numFreqPoint=3;
+#material
+n_sio2=1.45;
+n_si=3.48;
+n_siN=1.98;
+ #geometry etc
+xwidth=20e-6;
+ywidth=20e-6;
+y_siN=1.5e-6;
+
+fdtd_x_min=-xwidth/2+5e-6;
+fdtd_x_max=xwidth/2-5e-6;
+fdtd_z_min=11e-6;
+fdtd_z_max=20e-6;
+fdtd_y_min=-ywidth/2+5e-6;
+fdtd_y_max=ywidth/2-5e-6;
+mesh_accuracy = 2; # default is 2
+pml_type = "stretched coordinate PML";
+mesh_type = "conformal variant 0";
+pml_numLayers = [64,64,64,64,64,64];
+
+addrect;
+set("name","sub");
+set("x",0);
+set("x span",xwidth);
+set("y",0);
+set("y span",ywidth);
+set("z",0e-6);
+set("z span",20e-6);
+set("index", n_si);
+
+ addrect;
+ set("name","box");
+ set("x",0);
+ set("x span",xwidth);
+ set("y",0);
+ set("y span",ywidth);
+ set("z min",10e-6);
+ set("z max",14.9e-6);
+ set("index", n_sio2);
+
+ addrect;
+ set("name","Jasmine");
+ set("y",0);
+ set("y span",ywidth);
+ set("x min",-xwidth/2);
+ set("x max",0);
+ set("z min",14.9e-6);
+ set("z max",15.6e-6);
+ #set("z max",19.775e-6);
+ set("index", n_sio2);
+ set("override mesh order from material database",1);
+ set("mesh order",2);
+  
+ addrect;
+ set("name","Coax");
+ set("y",0);
+ set("y span",ywidth);
+ set("x min",0);
+ set("x max",xwidth/2);
+ set("z min",14.9e-6);
+ set("z max",19.775e-6);
+ #set("z max",15.6e-6);
+ set("index", n_sio2);
+ set("override mesh order from material database",1);
+ set("mesh order",2);
+ 
+ addrect;
+ set("name","SiN");
+ set("x",0);
+ set("x span",xwidth);
+ set("y",0);
+ set("y span",y_siN);
+ set("z min",14.9e-6);
+ set("z max",15.1e-6);
+ set("index", n_siN);
+ set("override mesh order from material database",1);
+ set("mesh order",1);
+
+ addmesh;
+ set("name","mesh_SiN");
+ set("override x mesh",1);
+ set("override y mesh",1);
+ set("override z mesh",1);
+ set("set maximum mesh step",1);
+ set("dx",0.02e-6);
+ set("dy",0.02e-6);
+ set("dz",0.02e-6);
+ set("based on a structure",1);
+ set("structure","SiN");
+
+# set global monitor properties
+setglobalmonitor("frequency points",numFreqPoint);
+# add ports
+setglobalsource("wavelength start", (  centerWavelength - 10e-9 )  );
+setglobalsource("wavelength stop", (  centerWavelength + 10e-9 )   );
+
+# add FDTD
+addfdtd;
+set("dimension","3D");
+set("x min",fdtd_x_min);
+set("x max",fdtd_x_max);
+set("z min",fdtd_z_min);
+set("z max",fdtd_z_max);
+set("y min",fdtd_y_min);
+set("y max",fdtd_y_max);
+set("mesh accuracy",mesh_accuracy);
+set("mesh refinement",mesh_type);
+set("pml type",pml_type);
+set("mesh refinement",mesh_type);
+set("snap pec to yee cell boundary",0);
+
+# set port Jasmine side
+addport;
+set("x",fdtd_x_min+1e-6);
+set("y min", fdtd_y_min);
+set("y max", fdtd_y_max);
+set("z min",fdtd_z_min);
+set("z max",fdtd_z_max);
+set("injection axis","x");
+set("direction","Forward");
+select("FDTD::ports::port 1"); # select the port group
+set("name","jasmine_side");
+set("mode selection","fundamental TE mode");
+
+# Set Port COAX
+addport;
+set("x",fdtd_x_max-1e-6);
+set("y min", fdtd_y_min);
+set("y max", fdtd_y_max);
+set("z min",fdtd_z_min);
+set("z max",fdtd_z_max);
+set("injection axis","x");
+set("direction","Backward");
+select("FDTD::ports::port 2"); # select the port group
+set("name","coax_side");
+set("mode selection","fundamental TE mode");
+
+####monitor
+addpower;
+set("name","right_mon");
+set("monitor type","2D X-norm");
+set("x min",fdtd_x_max-1e-6);
+set("x max",fdtd_x_max-1e-6);
+set("y min",fdtd_y_min);
+set("y max",fdtd_y_max);
+set("z min",fdtd_z_min);
+set("z max",fdtd_z_max);
+
+
+# add mode expasion monitor COAX
+addmodeexpansion;
+set("name","right_mode_expansion");
+set("x min",fdtd_x_max-1e-6);
+set("x max",fdtd_x_max-1e-6);
+set("y min",fdtd_y_min);
+set("y max",fdtd_y_max);
+set("z min",fdtd_z_min);
+set("z max",fdtd_z_max);
+select("right_mode_expansion");
+setexpansion("right_mon", "right_mon");
+
+addpower;
+set("name","left_mon");
+set("monitor type","2D X-norm");
+set("x min",fdtd_x_min+0.5e-6);
+set("x max",fdtd_x_min+0.5e-6);
+set("y min",fdtd_y_min);
+set("y max",fdtd_y_max);
+set("z min",fdtd_z_min);
+set("z max",fdtd_z_max);
+
+addmodeexpansion;
+set("name","left_mode_expansion");
+set("x min",fdtd_x_min+0.5e-6);
+set("x max",fdtd_x_min+0.5e-6);
+set("y min",fdtd_y_min);
+set("y max",fdtd_y_max);
+set("z min",fdtd_z_min);
+set("z max",fdtd_z_max);
+select("left_mode_expansion");
+setexpansion("left_mon", "left_mon");
+
+run;
+
+#f = getresult("FDTD::ports::coax_side","f");
+#sim_wavelengths = 299792458/f;
+Expnd_coax = getresult("FDTD::ports::coax_side","expansion for port monitor");
+Expnd_jasmine = getresult("FDTD::ports::jasmine_side","expansion for port monitor");
+Expnd_right_mon = getresult("right_mode_expansion","expansion for right_mon");
+Expnd_left_mon = getresult("left_mode_expansion","expansion for left_mon");
+
+T_right_mon = getresult("right_mon","T");
+R_left_mon= getresult("left_mon","T");
+               
+T_modal_TE = mean(abs(Expnd_coax.S)^2); #% modal transmission, epi to Si
+T_modal_Tforward = mean(abs(Expnd_right_mon.T_forward)); #% modal transmission, epi to Si
+R_modal = mean(abs(Expnd_jasmine.S)^2); #% modal reflection, epi back to epi
+R_modal_Tbackward = mean(abs(Expnd_left_mon.T_backward)); #% modal transmission, epi to Si
+T_total = mean(abs(T_right_mon.T)); #% total back reflection into epi, ignoring mode overlaps
+R_total = mean(abs(R_left_mon.T));                
+                
+port2_T = getresult("FDTD::ports::coax_side","T"); #T: Transmission as a function of frequency/wavelength.
+T_total_port = mean(abs(port2_T.T));# =T_total                

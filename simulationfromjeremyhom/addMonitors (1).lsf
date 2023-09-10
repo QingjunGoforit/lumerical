@@ -1,0 +1,142 @@
+if(addMovieMonitors){
+ addmovie;
+set("name","movie_top");
+set("monitor type",3);  # 1 = 2D x-normal,  2 = 3D y-normal,  3 = 2D z-normal
+set("x min",fdtd_x_min);
+set("x max",fdtd_x_max);
+set("y min",fdtd_y_min);
+set("y max",fdtd_y_max);
+set("z",-3e-6 + QW_center_height_above_BOX);
+
+set("lock aspect ratio",1);
+set("horizontal resolution",240);
+
+addmovie;
+set("name","movie_side");
+set("monitor type",2);  # 1 = 2D x-normal,  2 = 3D y-normal,  3 = 2D z-normal
+set("x min",fdtd_x_min);
+set("x max",fdtd_x_max);
+set("y",0);
+set("z min",fdtd_z_min);
+set("z max",fdtd_z_max);
+
+set("lock aspect ratio",1);
+set("horizontal resolution",240);
+    
+}
+
+
+
+
+if (addPowerMonitor){
+# add Trasmit (Bottom) profile & power monitors
+addpower;
+set("name","right_mon");
+set("monitor type","2D X-norm");
+if (arch =='output'){
+    set("x min",fdtd_x_max-2500e-9);
+    set("x max",fdtd_x_max-2500e-9);
+}
+else {
+    set("x min",fdtd_x_max-500e-9);
+    set("x max",fdtd_x_max-500e-9);
+}
+set("y min",fdtd_y_min);
+set("y max",fdtd_y_max);
+set("z min",fdtd_z_min);
+set("z max",fdtd_z_max);
+
+
+# add mode expasion monitor IIIV
+addmodeexpansion;
+set("name","right_mode_expansion");
+if (arch =='output'){
+    set("x min",fdtd_x_max-2500e-9);
+    set("x max",fdtd_x_max-2500e-9);
+}
+else {
+    set("x min",fdtd_x_max-500e-9);
+    set("x max",fdtd_x_max-500e-9);
+}
+set("y min",fdtd_y_min);
+set("y max",fdtd_y_max);
+set("z min",fdtd_z_min);
+set("z max",fdtd_z_max);
+select("right_mode_expansion");
+setexpansion("right_mon", "right_mon");
+
+# add Trasmit (Bottom) profile & power monitors
+addpower;
+set("name","left_mon");
+set("monitor type","2D X-norm");
+set("x min",fdtd_x_min+500e-9);
+set("x max",fdtd_x_min+500e-9);
+set("y min",fdtd_y_min);
+set("y max",fdtd_y_max);
+set("z min",-4e-6);
+set("z max",fdtd_z_max);
+
+
+# add mode expasion monitor Si
+addmodeexpansion;
+set("name","left_mode_expansion");
+set("x min",fdtd_x_min+500e-9);
+set("x max",fdtd_x_min+500e-9);
+set("y min",fdtd_y_min);
+set("y max",fdtd_y_max);
+set("z min",-4e-6);
+set("z max",fdtd_z_max);
+select("left_mode_expansion");
+setexpansion("left_mon", "left_mon");
+}
+
+
+
+if (addSideMonitor){
+###  X-Z  Plane  ###
+# add Side-View profile monitors for index n
+addindex;
+set("name","ref_index_xz");
+set("monitor type","2D Y-normal");
+set("x min",fdtd_x_min);
+set("x max",fdtd_x_max);
+set("z min",fdtd_z_min);
+set("z max",fdtd_z_max);
+set("y",0);
+
+
+# add Side-View profile monitors for E-field 
+addprofile;
+set("name","field_profile_xz");
+set("monitor type","2D Y-normal");
+set("x min",fdtd_x_min);
+set("x max",fdtd_x_max);
+set("z min",fdtd_z_min);
+set("z max",fdtd_z_max);
+set("y",0);
+
+
+
+###  X-Y  Plane  ###
+# add Side-View profile monitors for index n
+addindex;
+set("name","ref_index_xy");
+set("monitor type","2D Z-normal");
+set("x min",fdtd_x_min);
+set("x max",fdtd_x_max);
+set("y min",fdtd_y_min);
+set("y max",fdtd_y_max);
+set("z",-0.4e-6);
+
+
+# add Side-View profile monitors for E-field 
+addprofile;
+set("name","field_profile_xy");
+set("monitor type","2D Z-normal");
+set("x min",fdtd_x_min);
+set("x max",fdtd_x_max);
+set("y min",fdtd_y_min);
+set("y max",fdtd_y_max);
+set("z",-1.5e-6);
+
+}

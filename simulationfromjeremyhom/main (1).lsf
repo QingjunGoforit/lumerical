@@ -1,0 +1,189 @@
+switchtolayout;
+deleteall;
+clear;
+clearjobs;
+
+buildSimulation = 1;
+runSimulation = 0;
+exportResults = 0;
+
+is_BH = 0;
+
+arch = 'Arch3'; # 'Arch3' or 'Arch2' or 'output'
+
+NoFill =1;
+SiFill = !NoFill;
+disable_silicon = 0;
+disable_epi = 0;
+
+add_oxide_liner = 0;
+oxide_liner_thickness = 20e-9;
+n_liner = 1.44;
+
+mesh_accuracy = 2; # default is 2
+refine_mesh_in_QW_region = 1; # default is 1
+refine_mesh_in_gap_region = 1;
+
+design_nums =  3;# [3, 8, 15]; #%epi design numbers to simulate%;
+#growthsheet =  "gen2_epi_InP1to15.mat"; #%epi growth sheet%;
+growthsheet =  "gen2_epi_InP_Oct2020.mat"; #%epi growth sheet%;
+
+
+# SCH
+override_SCH = 0;
+if(override_SCH){
+SCH1_ht = 40e-9;
+SCH2_ht = 20e-9;
+}
+
+#Si 
+Si_width = 2.6e-6; 
+wwg = Si_width;
+#III-V
+ridge_width = 2.7e-6;
+wwg2 = ridge_width;
+
+addPowerMonitor = 1; # this one must be on for reflection to work.
+addSideMonitor = 1;
+addMovieMonitors = 0;
+
+if (NoFill){
+    gapIndex =1; #%gap fill index%;
+}
+
+
+## set up gap (X), lateral (Y), and vertical (Z) offsets:
+gapDistances = 10e-6; #[0.5, 1, 1.5, 2, 2.5, 3, 5 ]*1e-6; # this is the free space air gap, from AR coating to AR coating.
+
+#if (arch == 'Arch3'){
+#yShift_nom = gapDistance*sin(pi/180*27);
+#}
+#else{ # Arch 2
+#yShift_nom = gapDistance*sin(pi/180*23); #%epi waveguide y shift%;
+#}
+
+total_pillar_height = 800e-9; # + 60e-9 - SCH1_ht - SCH2_ht; # this is the "F" height from Tahiti.  Distance from top of BOX to bottom-most epi surface.
+yShifts = 4750e-9 ;#+ [-2500, -1500, -1000, -500, -250, 0, 250, 500, 1000, 1500, 2500]*1e-9;# % this is the offset between the waveguide centers, measured at the outside edge of the T-bar.
+
+Nx = length(gapDistances);
+Ny = length(yShifts);
+
+N_sweep = Nx*Ny;
+
+# pre-allocate result variables:
+T_modal_TE = matrix(length(design_nums), Nx, Ny);
+T_modal_TM = matrix(length(design_nums), Nx, Ny);
+R_modal = matrix(length(design_nums), Nx, Ny);
+R_total = matrix(length(design_nums), Nx, Ny);
+center_wavelength = matrix(length(design_nums), Nx, Ny);
+
+fspRootName =  "2020_10_26_6p0_XY_sweep";
+
+counter = 1;
+
+## start CSV file for summary results
+#format long;
+#sFileName = fspRootName + '.csv';
+#if(fileexists(fspRootName)){
+    rm(fspRootName);
+#}
+#write(fspRootName, 'Wavelength, gapDistances, yShift, pillarHeight, T_modal_TE, T_modal_TM, R_modal, R_total');
+
+N_sims = length(design_nums)*N_sweep;
+
+# MAIN SIMULATION LOOPS
+for( i_design = 1:length(design_nums)){
+    
+    design_num = design_nums(i_design);
+    ?('%%%%%%   Working on design number ' + num2str(design_num))+'   %%%%%%';
+    
+    for( i_x = 1:Nx )
+    {
+        
+        ## user, change the parameter you are sweeping here:
+        gapDistance = gapDistances(i_x);
+        ##
+        
+        
+        for(i_y = 1:Ny){
+            
+            yShift = yShifts(i_y);
+            
+            
+            ?'%%%%%%   Working on sim '+ num2str(counter) +' out of ' + num2str(N_sims) + '   %%%%%%';
+            
+            fspFileName = fspRootName + '_design' + num2str(design_num) + '_file' + num2str(counter);
+            
+            
+            
+            if( buildSimulation){
+                switchtolayout;
+                deleteall;
+                
+                loadParameters;
+                setupStructures;
+                addMonitors;
+                
+                save(fspFileName);
+                addjob(fspFileName);
+                
+            }
+            
+            
+            if (runSimulation){
+                runjobs;
+            }
+            
+            
+            if(exportResults){
+                
+                load(fspFileName);
+                
+                ## save summary results
+                #center_wavelength(i_design, i_sweep) = epi_centerWavelength;
+                f = getresult("FDTD::ports::Si Rib TE","f");
+                sim_wavelengths = 299792458/f;
+                center_wavelength(i_design, i_x, i_y) = mean(sim_wavelengths);
+                Expnd_Si_TE = getresult("FDTD::ports::Si Rib TE","expansion for port monitor");
+                Expnd_Si_TM = getresult("FDTD::ports::Si Rib TM","expansion for port monitor");
+                Expnd_epi = getresult("FDTD::ports::IIIV Ridge","expansion for port monitor");
+                Refl_epi = getresult("right_mon","T");
+                
+                T_modal_TE(i_design, i_x, i_y) = mean(abs(Expnd_Si_TE.S)^2); #% modal transmission, epi to Si
+                T_modal_TM(i_design, i_x, i_y) = mean(abs(Expnd_Si_TM.S)^2); #% modal transmission, epi to Si
+                R_modal(i_design, i_x, i_y) = mean(abs(Expnd_epi.S)^2); #% modal reflection, epi back to epi
+                R_total(i_design, i_x, i_y) = mean(abs(Refl_epi.T)); #% total back reflection into epi, ignoring mode overlaps
+                
+                
+                # append summary results to CSV file:
+                # must update sweep variable here fo  r different types of sweeps
+#                next_str = num2str(center_wavelength(i_design, i_x, i_y)) + ', ' + num2str(gapDistance) + ', ' + num2str(yShift) + ', ' + #num2str(total_pillar_height) + ', ' + num2str(T_modal_TE(i_design, i_x, i_y)) + ', ' + num2str(T_modal_TM(i_design, i_x, i_y)) + ', ' + #num2str(R_modal(i_design, i_x, i_y)) + ', ' + num2str(R_total(i_design, i_x, i_y)) ;
+#                write(sFileName, next_str);
+                
+                
+                #exportData; # not usually used, unless you are saving field data from monitors.
+                
+                clearjobs;
+            }
+            
+            counter = counter + 1;
+            
+            
+        }
+        
+        
+    }
+    
+}
+
+if(exportResults){
+    # save summary results to .mat:
+    # (add the variables you are sweeping here as well.)
+    matlabsave(fspRootName + '_results', design_nums, center_wavelength, T_modal_TE, T_modal_TM, R_modal, R_total, yShifts,Si_width, ridge_width, gapDistances, total_pillar_height);
+    
+    # dump all variable to .mat file as a comprehensive record
+    matlabsave(fspRootName + '_all_variables'); # save after every sim just in case.
+    
+    
+}
+
