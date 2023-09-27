@@ -1,0 +1,131 @@
+switchtolayout;
+deleteall;
+clear;
+
+#########################################################
+###approximation: don't consider the uneven on the top oxide
+
+#geometry parameters etc; 
+#z direction: SiN stars from z=0
+#wl=1.5601e-6;
+wl=1563.1e-9;
+n_sio2=1.444; 
+n_bto =2.28;
+n_sin=1.9741;
+n_si=3.47;
+# t_sin=0.28e-6;
+# t_bto=0.225e-6;
+# t_box=2.9e-6;
+# t_a=1.85e-6;
+# t_b=1.8e-6;
+#min:
+t_sin=0.26e-6;
+t_bto=0.21e-6;
+t_box=2.9e-6;
+t_a=1.65e-6;
+t_b=1.6e-6;
+beam_length=10e-6;
+wg_width=1e-6;
+
+#fdtd mesh parameters etc
+fdtd_ymin=-5e-6;
+fdtd_ymax=5e-6;
+fdtd_zmin=-t_bto-t_box;
+fdtd_zmax=t_a+t_b;
+fdtd_x=2e-6;
+extrude=10e-6;
+mesh_buffer=2e-6;
+
+#geometry
+addrect;
+set("name", "a&b");
+set("index", n_sio2);
+set("y min", fdtd_ymin-extrude);
+set("y max", fdtd_ymax+extrude);
+set("z min", 0);
+set("z max", t_a+t_b+2e-6);
+set("x min", 0e-6);
+set("x max", beam_length); 
+set("override mesh order from material database",1);
+set("mesh order",2);
+
+addrect;
+set("name", "wg");
+set("index", n_sin);
+set("y min", -wg_width/2);
+set("y max", wg_width/2);
+set("z min", 0);
+set("z max", t_sin);
+set("x min", 0e-6);
+set("x max", beam_length); 
+set("override mesh order from material database",1);
+set("mesh order",1);
+
+addrect;
+set("name", "BTO");
+#set("material", "Si (Silicon) - Palik");
+set("index", n_bto);
+set("y min",fdtd_ymin-extrude);        
+set("y max", fdtd_ymax+extrude);
+set("z min", -t_bto);
+set("z max", 0);
+set("x min", 0e-6);
+set("x max", beam_length); #the cell2 sio2 layer will stretrch automatically in eme scan
+
+addrect;
+set("name", "box");
+set("index", n_sio2);
+set("y min",fdtd_ymin-extrude);        
+set("y max", fdtd_ymax+extrude);
+set("z min", -t_bto-t_box-extrude);
+set("z max", -t_bto);
+set("x min", 0e-6);
+set("x max", beam_length); #the cell2 sio2 layer will stretrch automatically in eme scan
+
+addmesh;
+set("name","mesh_wg");
+set("override x mesh",1);
+set("override y mesh",1);
+set("override z mesh",1);
+set("set maximum mesh step",1);
+set("dx",0.01e-6);
+set("dy",0.01e-6);
+set("dz",0.01e-6);
+set("based on a structure",1);
+set("structure","wg");
+
+addmesh;
+set("name","mesh_wg_buffer");
+set("override x mesh",1);
+set("override y mesh",1);
+set("override z mesh",1);
+set("set maximum mesh step",1);
+set("dx",0.05e-6);
+set("dy",0.05e-6);
+set("dz",0.05e-6);
+set("based on a structure",1);
+set("structure","wg");
+set("buffer",mesh_buffer);
+
+addfde;
+set("solver type","2D X normal");
+set("x",fdtd_x);
+set("y min", fdtd_ymin);
+set("y max",fdtd_ymax);
+set("z min",fdtd_zmin);
+set("z max",fdtd_zmax);
+set("y min bc","Anti-Symmetric");
+#set("z min bc","Symmetric");
+set("define y mesh by","maximum mesh step");
+set("define z mesh by","maximum mesh step");
+set("dy",0.2e-6);
+set("dz",0.2e-6);
+set("grading factor",1.2);
+set("wavelength", wl);
+set("number of trial modes",1);
+#?set;
+findmodes;
+#out_mode_gye = getdata("FDE::data::mode1"); # interested mode number?
+#copydcard("FDE::data::mode1","mode_data_save");
+#H_gye = getresult(out_mode_gye, "H"); # get H field from mode1?
+#E_gye = getresult(out_mode_gye, "E");

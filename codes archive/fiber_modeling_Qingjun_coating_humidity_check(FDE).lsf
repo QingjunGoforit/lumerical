@@ -1,0 +1,228 @@
+switchtolayout;
+deleteall;
+clear;
+
+#SMF28 
+d_coat=250e-6;
+d_clad=125e-6;
+d_core=8.2e-6; 
+l_fde=150e-6;
+#n_clad=1.444;
+n_clad=1.444;
+n_core=1.44894;
+#n_find=1.446032;
+n_find=1.446;
+#n_coat=1.54;
+n_coat=1;
+#n_coat=1;
+wl=1.55e-6;
+#NA=[0.32,0.33,0.34,0.35,0.36,0.37,0.38,0.3417];
+#NAM=[0.32*ones(1, 8), 0.33*ones(1, 8), 0.34*ones(1, 8), 0.35*ones(1, 8), 0.36*ones(1, 8), 0.37*ones(1, 8), 0.38*ones(1, 8),0.3417*ones(1, 8)];
+mesh_size=20e-9;
+buffer_mesh_size=50e-9;
+mesh_fde=50e-9;
+#?NAM;
+#?NA(2);
+#design_nums=[2,3,4,5,6,8,9,10]; ##n_clading number
+#n_clad= matrix(length(design_nums)*length(NA));
+#modal_D= matrix(length(design_nums)*length(NA));
+#power_coupling= matrix(length(design_nums)*length(NA));
+
+#?length(design_nums);
+#?length(modal_D);
+#########################################################
+
+#geometry etc
+addcircle;
+set("name","Fiber_coating");
+set("x",-500e-6);
+set("y",0e-6);
+set("radius",d_coat/2);
+set("z",0);
+set("z span",1000e-6);
+set("index", n_coat);
+set("first axis","y");
+set("rotation 1", 90);
+
+addcircle;
+set("name","Fiber_cladding1");
+set("x",-500e-6);
+set("y",0e-6);
+set("radius",d_clad/2);
+set("z",0);
+set("z span",1000e-6);
+set("index", n_clad);
+set("first axis","y");
+set("rotation 1", 90);
+
+addcircle;
+set("name","Fiber_core1");
+set("x",-500e-6);
+set("y",0e-6);
+set("radius",d_core/2);
+set("z",0);
+set("z span",1000e-6);
+set("index", n_core);
+set("first axis","y");
+set("rotation 1", 90);
+
+addmesh;
+set("name","mesh_Fiber_core");
+set("override x mesh",1);
+set("override y mesh",1);
+set("override z mesh",1);
+set("set maximum mesh step",1);
+set("dx",mesh_size);
+set("dy",mesh_size);
+set("dz",mesh_size);
+set("based on a structure",1);
+set("structure","Fiber_core1");
+
+addmesh;
+set("name","mesh_Fiber_core_buffer");
+set("override x mesh",1);
+set("override y mesh",1);
+set("override z mesh",1);
+set("set maximum mesh step",1);
+set("dx",buffer_mesh_size);
+set("dy",buffer_mesh_size);
+set("dz",buffer_mesh_size);
+set("based on a structure",1);
+set("structure","Fiber_core1");
+set("buffer",5e-6);
+
+addfde;
+set("solver type","2D X normal");
+set("x",-50e-6);
+set("y",0);
+set("y span",l_fde);
+set("z",0);
+set("z span",l_fde);
+set("y min bc","Anti-Symmetric");
+set("y min bc","Anti-Symmetric");
+
+#set("z min bc","Symmetric");
+set("define y mesh by","maximum mesh step");
+set("define z mesh by","maximum mesh step");
+set("dy",mesh_fde);
+set("dz",mesh_fde);
+set("grading factor",1.2);
+set("wavelength", wl);
+set("number of trial modes",3);
+set("search","near n");
+set("use max index",0);
+set("n", n_find);
+
+#?set;
+findmodes;
+mode = getdata("FDE::data::mode3"); # interested mode number?
+#copydcard("FDE::data::mode1","mode_data_save");
+#H_gye = getresult(out_mode_gye, "H"); # get H field from mode1?
+#E_gye = getresult(out_mode_gye, "E");
+#?out_mode_gye;
+
+# #########################################################
+# for(j=1:length(NA))
+# {
+# for(i=1:length(design_nums)){
+# switchtolayout;
+# deleteall;
+# #variable
+# n_clad((j-1)*8+i)=1+(i-1)*0.1+0.044; 
+# n_core=sqrt(NA(j)^2 + n_clad(i)^2);
+# wl=1.55e-6;
+
+# #geometry etc
+# addcircle;
+# set("name","Fiber_cladding1");
+# set("x",-500e-6);
+# set("y",0e-6);
+# set("radius",62.5e-6);
+# set("z",0);
+# set("z span",1000e-6);
+# set("index", n_clad(i));
+# set("first axis","y");
+# set("rotation 1", 90);
+
+# addcircle;
+# set("name","Fiber_core1");
+# set("x",-500e-6);
+# set("y",0e-6);
+# set("radius",d_core/2);
+# set("z",0);
+# set("z span",1000e-6);
+# set("index", n_core);
+# set("first axis","y");
+# set("rotation 1", 90);
+
+# addmesh;
+# set("name","mesh_Fiber_core");
+# set("override x mesh",1);
+# set("override y mesh",1);
+# set("override z mesh",1);
+# set("set maximum mesh step",1);
+# set("dx",0.01e-6);
+# set("dy",0.01e-6);
+# set("dz",0.01e-6);
+# set("based on a structure",1);
+# set("structure","Fiber_core1");
+
+# addmesh;
+# set("name","mesh_Fiber_core_buffer");
+# set("override x mesh",1);
+# set("override y mesh",1);
+# set("override z mesh",1);
+# set("set maximum mesh step",1);
+# set("dx",0.05e-6);
+# set("dy",0.05e-6);
+# set("dz",0.05e-6);
+# set("based on a structure",1);
+# set("structure","Fiber_core1");
+# set("buffer",5e-6);
+
+
+# addfde;
+# set("solver type","2D X normal");
+# set("x",-50e-6);
+# set("y",0);
+# set("y span",50e-6);
+# set("z",0);
+# set("z span",50e-6);
+# set("y min bc","Anti-Symmetric");
+# set("z min bc","Symmetric");
+# set("define y mesh by","maximum mesh step");
+# set("define z mesh by","maximum mesh step");
+# set("dy",0.2e-6);
+# set("dz",0.2e-6);
+# set("grading factor",1.2);
+# set("wavelength", wl);
+# set("number of trial modes",1);
+# #?set;
+# findmodes;
+
+# ##
+# out_mode = "FDE::data::mode1"; # interested mode number?
+# H = getresult(out_mode, "H"); # get H field from mode1?
+# H2 = H.H2; # H field intensity?
+# y=H.y; # y-axis?
+# z=H.z; # z-axis?
+# numerator = integrate(H2,2:3,y,z)^2;
+# denominator = integrate(H2^2,2:3,y,z);
+# modal_area = numerator/denominator; 
+# modal_D((j-1)*8+i)=sqrt(modal_area/pi)*2;
+
+# #overlap
+# overlap_matrix=overlap("mode_data_save",out_mode);
+# power_coupling((j-1)*8+i)=overlap_matrix(2);
+# }
+# }
+
+# transNAM=transpose(NAM);
+# #NA1=replacestring(num2str(NA),"0.","0");
+# #?NA1;
+# fspRootName='/home/centos/Documents/Qingjun/2D_MFD_nclad';
+# matlabsave(fspRootName + '_results'+'_NA_all_includegye',transNAM,n_clad,modal_D,power_coupling);
+
+# #?modal_D;
+# #?n_clad;
+

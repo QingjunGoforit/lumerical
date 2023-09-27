@@ -1,0 +1,24 @@
+findmodes;
+
+##
+out_mode = "FDE::data::mode1"; # interested mode number?
+
+ H = getresult(out_mode, "H"); # get H field from mode1?
+
+ H2 = H.H2; # H field intensity?
+
+ y=H.y; # y-axis?
+
+ z=H.z; # z-axis?
+
+
+
+ numerator = integrate(H2,2:3,y,z)^2;
+
+ denominator = integrate(H2^2,2:3,y,z);
+
+ modal_area = numerator/denominator; 
+ 
+ modal_D=sqrt(modal_area/pi)*2;
+ 
+ 1561.

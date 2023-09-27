@@ -1,0 +1,115 @@
+switchtolayout;
+deleteall;
+clear;
+cleardcard;
+newproject;  # create a new simulation file
+importmaterialdb("/home/centos/efs/lumerical/Qingjun/PSR/M2_MM1.mdf");
+
+symmertic=1;
+#interposer stack, paper stack hide
+dx = 20e-9;
+dz = 20e-9;
+dy = 20e-9;
+BOX = 10e-6;
+Tair = 10e-6;
+ylength=20e-6; #the fde size
+zlength=4e-6;  #the fde size
+ygeo=ylength+5e-6; #the geometry size, always larger than fde size
+#height=0.22e-6;
+height = 0.08e-6;
+wg_w=0.5e-6;
+if (symmertic==1){waveguide_width = linspace(4e-6,6e-6,10);}
+if (symmertic==0){waveguide_width = linspace(1e-6,1.1e-6,2);}
+#if (symmertic==0){waveguide_width = linspace(0.625e-6,1.1e-6,475);}
+waveguide_width_flip=flip(waveguide_width,1);
+
+wl = 1560.61e-9;
+
+neff1 = matrix(length(waveguide_width));
+neff2 = matrix(length(waveguide_width));
+neff3 = matrix(length(waveguide_width));
+neff4 = matrix(length(waveguide_width));
+neff5 = matrix(length(waveguide_width));
+
+addrect;
+set("name", "SiO2");
+#set("material", "SiO2 (Glass) Ligentec Sellmeier");
+set("index", 1.445);
+set("y min", -ygeo);        
+set("y max", ygeo);
+set("z min", -BOX);
+if (symmertic==1) {set("z max", BOX);}
+if (symmertic==0) {set("z max", 0);}
+set("x min", 0e-6);
+set("x max", 10e-6); #the cell2 sio2 layer will stretrch automatically in eme scan
+
+addrect;
+set("name", "SiN");
+#set("material", "Si (Silicon) - Palik");
+set("index", 1.9741);
+set("y", 0);        
+set("y span", wg_w);
+set("z min", 0);
+set("z max", height);
+set("x min", 0e-6);
+set("x max", 10e-6); #the cell2 sio2 layer will stretrch automatically in eme scan
+
+addfde;
+set("solver type","2D X normal");
+set("x",1e-6);
+set("y",0);
+set("y span",ylength*2);
+set("z min",-zlength);
+set("z max",zlength);
+set("define y mesh by","maximum mesh step");
+set("define z mesh by","maximum mesh step");
+set("dy",0.02e-6);
+set("dz",0.02e-6);
+set("grading factor",1.2);
+set("wavelength", wl);
+set("number of trial modes",10);
+
+for (i=1:length(waveguide_width)){
+    switchtolayout;
+    #setnamed('SiN','y span',waveguide_width_flip(i));
+    setnamed('SiN','y span',waveguide_width(i));
+
+    findmodes;
+    # store top 5 modes for largest waveguide width
+    # since the mode order may change for different width
+    if (i==1){
+        copydcard('mode1','TE0');  
+        copydcard('mode2','TM0');  
+        copydcard('mode3','TE1');  
+        #copydcard('mode4','TM0');  
+        #copydcard('mode4','TM0');
+        #copydcard('mode6','TM1');     
+      }
+
+    # store neff for modes at other waveguide width
+    neff1(i) = real(getdata(bestoverlap('TE0'),'neff'));
+    neff2(i) = real(getdata(bestoverlap('TM0'),'neff'));    
+    neff3(i) = real(getdata(bestoverlap('TE1'),'neff'));
+    #neff4(i) = real(getdata(bestoverlap('TM0'),'neff'));
+    #neff5(i) = real(getdata(bestoverlap('TM1'),'neff'));
+    if (neff3(i) == neff1(i)){neff3(i) = 1.445;}
+
+    #TE0 = "FDE::data::mode1"; 
+    #TE0 = getdata("FDE::data::mode1"); # interested mode number?
+    #TE0neff= getresult(TE0, "neff"); 
+
+    #mode_2 = "FDE::data::mode2"; 
+    #mode_2eff= getresult(mode_2, "neff"); 
+}
+
+#plot(waveguide_width_flip*1e6,neff1,neff2,neff3,'waveguide width (um)','neff','asymmetric','plot type=point,marker size=0.5');
+plot(waveguide_width*1e6,neff1,neff2,neff3,'waveguide width (um)','neff','symmetric');
+#setplot('x min',0.625);
+#setplot('x max',1.1);  
+#setplot('y min',1); 
+#setplot('y max',1.9741);
+#legend('TE0','TE1','TE2','TM0','TM1');
+legend('TE0','TM0','TE1');
+save('/home/centos/efs/lumerical/Qingjun/PSR/test0621.lms');
+
+
