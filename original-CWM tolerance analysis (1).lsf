@@ -1,0 +1,104 @@
+switchtolayout;
+nm = 1e-9;
+um = 1e-6;
+mm = 1e-3;
+format long;
+
+device_name = "Waveguide";
+wg_gap = 1141*nm;
+wg_thickness = 50*nm;
+wg_width = 500*nm;
+wavelength1 = 635*nm;       # target wavelength to split out 
+wavelength2 = 518*nm;       # wavelength to test the leakage 
+neff0 = 1.6; 
+
+parameter_name = "shift_CD";
+parameter = linspace(-50,50,2)*nm;
+parameter_name_2 = "shift_thickness";
+parameter_2 = linspace(-6,2,2)*nm;
+coupling_efficiency = matrix(length(parameter),length(parameter_2));
+leakage = matrix(length(parameter),length(parameter_2));
+selectivity = matrix(length(parameter),length(parameter_2));
+
+## Solve the target DC length 
+setnamed("FDE","x min bc","Metal");     #setnamed("FDE","x min bc","Anti-Symmetric");
+setnamed("FDE","x max bc","Metal");
+setnamed("FDE","y min bc","Symmetric");
+setnamed("FDE","y max bc","Metal");
+setanalysis("bent waveguide",0);
+setanalysis("number of trial modes",2);
+setanalysis("use max index",1);
+
+setnamed(device_name,"gap",wg_gap);
+setnamed(device_name,"waveguide_thickness",wg_thickness);
+setnamed(device_name,"waveguide_width_right",wg_width);
+setnamed(device_name,"waveguide_width_left",wg_width);
+setanalysis("wavelength",wavelength1);
+
+findmodes;
+neff1 = real(getdata("mode1","neff"));
+neff2 = real(getdata("mode2","neff"));
+neff0 = neff1;
+setanalysis("use max index",0);
+
+DC_length = wavelength1/(neff1-neff2)/2;    # unit in microns
+print("Target DC length = " + num2str(DC_length*1e6) + "um");
+
+DC_length = 260.78*um;
+## Tolerance analysis
+for(j=1:length(parameter_2)) { 
+    switchtolayout;
+    setnamed(device_name,"waveguide_thickness",wg_thickness+parameter_2(j));
+    neff_tmp_1 = neff0+0.1;
+    neff_tmp_2 = neff0+0.1;
+
+    for(i=1:length(parameter)) {
+        print(num2str(j)+","+num2str(i)+ " of " + num2str(length(parameter_2))+","+num2str(length(parameter)));              
+        switchtolayout;
+        setnamed(device_name,"gap",wg_gap-parameter(i));
+        setnamed(device_name,"waveguide_width_right",wg_width+parameter(i));
+        setnamed(device_name,"waveguide_width_left",wg_width+parameter(i));
+       
+        setanalysis("wavelength",wavelength1);
+        setanalysis("n",neff_tmp_1);
+        findmodes;
+        neff1 = real(getdata("mode1","neff"));
+        neff2 = real(getdata("mode2","neff"));
+        delta_n_1 = neff1-neff2;
+        neff_tmp_1 = neff1;
+        
+        switchtolayout;
+        setanalysis("wavelength",wavelength2);
+        setanalysis("n",neff_tmp_2);
+        findmodes;
+        neff1 = real(getdata("mode1","neff"));
+        neff2 = real(getdata("mode2","neff"));
+        delta_n_2 = neff1-neff2;
+        neff_tmp_2 = neff1;
+        
+        coupling_efficiency(i,j) = sin(pi*DC_length*delta_n_1/wavelength1)^2;       
+        leakage(i,j) = sin(pi*DC_length*delta_n_2/wavelength2)^2;  
+        selectivity(i,j) = 1/leakage(i,j);
+        
+        closeall;
+        image(parameter,parameter_2,coupling_efficiency, 
+        "CD shift", "Thickness shift", "Coupling efficiency for wavelength="+num2str(wavelength1*1e9)+"nm");
+}
+} 
+
+?coupling_efficiency;
+matlabsave("");
+
+
+
+
+
+
+
+
+
+
+
+
+
+

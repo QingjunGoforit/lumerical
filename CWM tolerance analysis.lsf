@@ -1,0 +1,264 @@
+switchtolayout;
+deleteall;
+clear;
+nm = 1e-9;
+um = 1e-6;
+mm = 1e-3;
+format long;
+
+#RG splitter
+device_name = "Waveguide";
+wg_gap = 1141*nm;
+wg_thickness = 50*nm;
+wg_width = 500*nm;
+wavelength1 = 635*nm;       # target wavelength to split out 
+wavelength2 = 518*nm;       # wavelength to test the leakage 
+
+#GB splitter
+device_name = "Waveguide";
+wg_gap = 1141*nm;
+wg_thickness = 50*nm;
+wg_width = 399*nm;
+wavelength1 = 518*nm;       # target wavelength to split out 
+wavelength2 = 450*nm;      # wavelength to test the leakage 
+
+
+#add geometry
+#parameters
+addstructuregroup;
+set("name","Waveguide");
+# 2 - Length
+# 5 - Material
+#0 - number
+adduserprop("box_size_x", 2, 20*um);
+adduserprop("box_size_y", 2, 20*um); 
+adduserprop("wg_width", 2, wg_width); 
+adduserprop("cladding_material", 5, "00_SiO2_IMEC_thermal"); 
+adduserprop("gap", 2, 1.141*um); 
+adduserprop("if_wg_left", 0, 1); 
+adduserprop("if_wg_right", 0, 1); 
+adduserprop("waveguide_material", 5, "00_SiN_IMEC_Birdie"); 
+adduserprop("waveguide_slab_thickness", 2, 0); 
+adduserprop("waveguide_thickness", 2, 50*nm); 
+# box_size_x = 20*um;
+# box_size_y = 20*um;
+# cladding_material="00_SiO2_IMEC_thermal";
+# gap= 1.141*um;
+# if_wg_left=1;
+# if_wg_right=1;
+# waveguide_material="00_SiN_IMEC_Birdie";
+# waveguide_slab_thickness=0;
+# waveguide_thickness=50*nm
+myscript = 
+"addrect;
+set(\"name\",\"cladding\");
+# select(\"cladding\");
+# addtogroup(\"::model::Waveguide\"); 
+set(\"material\",cladding_material);
+set(\"x span\",box_size_x);
+set(\"y span\",box_size_y);
+set(\"y\",0);
+set(\"z span\",0);
+
+if (if_wg_left) {
+addrect;
+set(\"name\",\"waveguide left\");
+set(\"material\",waveguide_material);
+set(\"x span\",wg_width+CDshift);
+set(\"y span\",waveguide_thickness);
+set(\"y\",0);
+set(\"z span\",0);
+move(-gap/2-wg_width/2,0,0);}
+# select(\"waveguide left\");
+# addtogroup(\"::model::Waveguide\"); 
+if (if_wg_right) {
+addrect;
+set(\"name\",\"waveguide right\");
+set(\"material\",waveguide_material);
+set(\"x span\",wg_width+CDshift);
+set(\"y span\",waveguide_thickness);
+set(\"y\",0);
+set(\"z span\",0);
+move(gap/2+wg_width/2,0,0);}
+# select(\"waveguide right\");
+# addtogroup(\"::model::Waveguide\"); 
+#
+addrect;
+set(\"name\",\"waveguide slab\");
+set(\"material\",waveguide_material);
+set(\"x span\",box_size_x);
+set(\"y max\",-waveguide_thickness/2+waveguide_slab_thickness);
+set(\"y min\",-waveguide_thickness/2);
+set(\"z span\",0);
+# select(\"waveguide slab\");
+# addtogroup(\"::model::Waveguide\");
+";
+set("script",myscript); 
+
+#Add mesh
+addmesh;
+set("directly defined", 1);
+set("x",0);
+set("y",0);
+set("z",0);
+set("x span",30*um);
+set("y span",0.06*um);
+set("z span",0*um);
+set("set maximum mesh step",1);
+set("override y mesh",1);
+set("dy",1*nm);
+#Addfde;
+addfde;
+set("solver type","2D Z normal");
+set("x",0);
+set("x span",12*um);
+set("y",0);
+set("y span",10*um);
+set("z",0);
+set("y min bc","Symmetric");
+set("y max bc","Metal");
+set("x min bc","Metal");
+set("x max bc","Metal");
+set("define x mesh by","maximum mesh step");
+set("define y mesh by","maximum mesh step");
+set("dx",10*nm);
+set("dy",10*nm);
+set("grading factor",1.4);
+set("min mesh step", 1*nm);
+          
+## Solve the target DC length 
+setnamed("FDE","x min bc","Metal");     #setnamed("FDE","x min bc","Anti-Symmetric");
+setnamed("FDE","x max bc","Metal");
+setnamed("FDE","y min bc","Symmetric");
+setnamed("FDE","y max bc","Metal");
+setanalysis("bent waveguide",0);
+setanalysis("number of trial modes",2);
+setanalysis("use max index",1);
+
+setnamed(device_name,"gap",wg_gap);
+setnamed(device_name,"waveguide_thickness",wg_thickness);
+setnamed(device_name,"wg_width",wg_width);
+setnamed(device_name,"wg_width",wg_width);
+setanalysis("wavelength",wavelength1);
+findmodes;
+neff1 = real(getdata("mode1","neff"));
+neff2 = real(getdata("mode2","neff"));
+neff0 = neff1;
+setanalysis("use max index",0);
+DC_length = wavelength1/(neff1-neff2)/2;    
+print("Target DC length = " + num2str(DC_length*1e6) + "um");
+
+#parameter array
+parameter_name = "shift_CD";
+parameter_cd = linspace(-35,-25,3)*nm; 
+parameter_name_2 = "shift_thickness";
+parameter_thick = linspace(-5,-2,8)*nm; 
+DC_length_ratio=linspace(0.92,1.06,8);
+DC_length_arr=DC_length*linspace(0.92,1.06,8); 
+#results array
+coupling_efficiency = matrix(length(parameter_cd),length(DC_length_arr),length(parameter_thick));
+leakage = matrix(length(parameter_cd),length(DC_length_arr),length(parameter_thick));
+selectivity = matrix(length(parameter_cd),length(DC_length_arr),length(parameter_thick));
+
+for (k=1:length(DC_length_arr))
+{
+    ## Tolerance analysis
+    for(j=1:length(parameter_thick)) 
+    { 
+        switchtolayout;
+        setnamed(device_name,"waveguide_thickness",wg_thickness+parameter_thick(j));
+        neff_tmp_1 = neff0+0.1;
+        neff_tmp_2 = neff0+0.1;
+    
+        for(i=1:length(parameter_cd)) 
+        {
+            print(num2str(j)+","+num2str(i)+ " of " + num2str(length(parameter_thick))+","+num2str(length(parameter_cd)));              
+            switchtolayout;
+            setnamed(device_name,"gap",wg_gap-parameter_cd(i));
+            setnamed(device_name,"wg_width",wg_width+parameter_cd(i));
+            setnamed(device_name,"wg_width",wg_width+parameter_cd(i));
+        
+            setanalysis("wavelength",wavelength1);
+            setanalysis("n",neff_tmp_1);
+            findmodes;
+            neff1 = real(getdata("mode1","neff"));
+            neff2 = real(getdata("mode2","neff"));
+            delta_n_1 = neff1-neff2;
+            neff_tmp_1 = neff1;
+            
+            switchtolayout;
+            setanalysis("wavelength",wavelength2);
+            setanalysis("n",neff_tmp_2);
+            findmodes;
+            neff1 = real(getdata("mode1","neff"));
+            neff2 = real(getdata("mode2","neff"));
+            delta_n_2 = neff1-neff2;
+            neff_tmp_2 = neff1;
+            coupling_efficiency(i,k,j) = sin(pi*DC_length_arr(k)*delta_n_1/wavelength1)^2;     #for wavelength1   
+            leakage(i,k,j) = sin(pi*DC_length_arr(k)*delta_n_2/wavelength2)^2;  #for wavelength2
+            selectivity(i,k,j) = 1/leakage(i,k,j);
+            
+            if(i==1&k==1&j==2) 
+            { 
+            ?k;
+            ?i;
+            ?j;
+            ?coupling_efficiency(i,k,j);
+            ?leakage(i,k,j);
+            }
+            closeall;
+            # image(parameter_cd,parameter_thick,coupling_efficiency(:,:,k), 
+            # "CD shift", "Thickness shift", "Coupling efficiency for wavelength="+num2str(wavelength1*1e9)+"nm");
+        }
+    } 
+}
+
+draw_wavelength1=1;
+draw_wavelength2=0;
+if(draw_wavelength1==1){
+#three images for wavelength1; split out wavelength
+image(DC_length_ratio,parameter_thick,coupling_efficiency(1,:,:),
+"DC_length_ratio","thickness","Coupling efficiency for wl="+num2str(round(wavelength1*1e9))+"nm"+"_CD shift_"+num2str(round(parameter_cd(1)*1e9)));
+image(DC_length_ratio,parameter_thick,coupling_efficiency(2,:,:),
+"DC_length_ratio","thickness","Coupling efficiency for wl="+num2str(round(wavelength1*1e9))+"nm"+"_CD shift_"+num2str(round(parameter_cd(2)*1e9)));
+image(DC_length_ratio,parameter_thick,coupling_efficiency(3,:,:),
+"DC_length_ratio","thickness","Coupling efficiency for wl="+num2str(round(wavelength1*1e9))+"nm"+"_CD shift_"+num2str(round(parameter_cd(3)*1e9)));
+}
+if(draw_wavelength2==1){
+#three images for wavelength2; keep propogate wavelength
+image(DC_length_ratio,parameter_thick,1-leakage(1,:,:),
+"DC_length_ratio","thickness","Coupling efficiency for wl="+num2str(round(wavelength2*1e9))+"nm"+"_CD shift_"+num2str(round(parameter_cd(1)*1e9)));
+image(DC_length_ratio,parameter_thick,1-leakage(2,:,:),
+"DC_length_ratio","thickness","Coupling efficiency for wl="+num2str(round(wavelength2*1e9))+"nm"+"_CD shift_"+num2str(round(parameter_cd(2)*1e9)));
+image(DC_length_ratio,parameter_thick,1-leakage(3,:,:),
+"DC_length_ratio","thickness","Coupling efficiency for wl="+num2str(round(wavelength2*1e9))+"nm"+"_CD shift_"+num2str(round(parameter_cd(3)*1e9)));
+}
+
+
+#draw a line for the target CD and thickness
+draw_wavelength1_line=1;
+draw_wavelength2_line=1;
+target_cd_value = -25*nm; # no.3
+cd_value=3;
+target_thick_value = -2*nm; # no.8
+thick=8;
+if(draw_wavelength1_line==1){
+plotxy(DC_length_ratio,coupling_efficiency(3,:,8),
+"DC_length_ratio","Coupling efficiency","wl="+num2str(round(wavelength1*1e9))+"nm"+"_CD shift"+num2str(round(parameter_cd(cd_value)*1e9))+"nm_thickness"+num2str(round(parameter_thick(thick)*1e9))+"nm");
+}
+if(draw_wavelength2_line==1){
+plotxy(DC_length_ratio,(1-leakage(3,:,8)),
+"DC_length_ratio","Coupling efficiency","wl="+num2str(round(wavelength2*1e9))+"nm"+"_CD shift"+num2str(round(parameter_cd(cd_value)*1e9))+"nm_thickness"+num2str(round(parameter_thick(thick)*1e9))+"nm");
+}
+
+
+filelocation="/home/hpcuser/cloud_storage/Qingjun Wang/CWM/Simulation files/";
+for (i=1:length(parameter_cd))
+{
+    coupling_efficiency_i=coupling_efficiency(i,:,:);
+    leakage_i=leakage(i,:,:);
+    selectivity_i=selectivity(i,:,:);
+    matlabsave(filelocation+"New_fullcode_Coupling_efficiency_for_wl_"+num2str(round(wavelength1*1e9))+"nm"+"_CD_shift_"+num2str(i),coupling_efficiency_i,leakage_i);
+}
+
+matlabsave(filelocation+"New_fullcode_Coupling_efficiency_for_wl_"+num2str(round(wavelength1*1e9))+"nm"+"_CD_shift_All",coupling_efficiency,leakage);
