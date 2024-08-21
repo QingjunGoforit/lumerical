@@ -14,19 +14,23 @@ wg_width = 500*nm;
 wavelength1 = 635*nm;       # target wavelength to split out 
 wavelength2 = 518*nm;       # wavelength to test the leakage 
 
-#GB splitter
-device_name = "Waveguide";
-wg_gap = 1141*nm;
-wg_thickness = 50*nm;
-wg_width = 399*nm;
-wavelength1 = 518*nm;       # target wavelength to split out 
-wavelength2 = 450*nm;      # wavelength to test the leakage 
+##GB splitter
+#device_name = "Waveguide";
+#wg_gap = 1141*nm;
+#wg_thickness = 50*nm;
+#wg_width = 399*nm;
+#wavelength1 = 518*nm;       # target wavelength to split out 
+#wavelength2 = 450*nm;      # wavelength to test the leakage 
 
 
 #add geometry
 #parameters
 addstructuregroup;
 set("name","Waveguide");
+set("x",0);
+set("y",0);
+set("z",0);
+set("construction group",1);
 # 2 - Length
 # 5 - Material
 #0 - number
@@ -40,6 +44,7 @@ adduserprop("if_wg_right", 0, 1);
 adduserprop("waveguide_material", 5, "00_SiN_IMEC_Birdie"); 
 adduserprop("waveguide_slab_thickness", 2, 0); 
 adduserprop("waveguide_thickness", 2, 50*nm); 
+adduserprop("CDshift", 2, 0); 
 # box_size_x = 20*um;
 # box_size_y = 20*um;
 # cladding_material="00_SiO2_IMEC_thermal";
@@ -95,18 +100,6 @@ set(\"z span\",0);
 ";
 set("script",myscript); 
 
-#Add mesh
-addmesh;
-set("directly defined", 1);
-set("x",0);
-set("y",0);
-set("z",0);
-set("x span",30*um);
-set("y span",0.06*um);
-set("z span",0*um);
-set("set maximum mesh step",1);
-set("override y mesh",1);
-set("dy",1*nm);
 #Addfde;
 addfde;
 set("solver type","2D Z normal");
@@ -119,18 +112,31 @@ set("y min bc","Symmetric");
 set("y max bc","Metal");
 set("x min bc","Metal");
 set("x max bc","Metal");
-set("define x mesh by","maximum mesh step");
-set("define y mesh by","maximum mesh step");
-set("dx",10*nm);
-set("dy",10*nm);
+set("define x mesh by","number of mesh cells");
+set("define y mesh by","number of mesh cells");
 set("grading factor",1.4);
-set("min mesh step", 1*nm);
-          
-## Solve the target DC length 
-setnamed("FDE","x min bc","Metal");     #setnamed("FDE","x min bc","Anti-Symmetric");
-setnamed("FDE","x max bc","Metal");
-setnamed("FDE","y min bc","Symmetric");
-setnamed("FDE","y max bc","Metal");
+set("min mesh step", 0.001*nm); 
+
+#Add mesh
+addmesh;
+set("directly defined", 1);
+set("x",0);
+set("y",0);
+set("z",0);
+set("x span",30*um);
+set("y span",0.06*um);
+set("z span",0*um);
+set("set maximum mesh step",1);
+set("override y mesh",1);
+set("dy",0.5*nm);
+    
+# ## Solve the target DC length 
+# setnamed("FDE","x min bc","Metal");     #setnamed("FDE","x min bc","Anti-Symmetric");
+# setnamed("FDE","x max bc","Metal");
+# setnamed("FDE","y min bc","Symmetric");
+# setnamed("FDE","y max bc","Metal");
+#this is method 3
+
 setanalysis("bent waveguide",0);
 setanalysis("number of trial modes",2);
 setanalysis("use max index",1);
@@ -169,7 +175,6 @@ for (k=1:length(DC_length_arr))
         setnamed(device_name,"waveguide_thickness",wg_thickness+parameter_thick(j));
         neff_tmp_1 = neff0+0.1;
         neff_tmp_2 = neff0+0.1;
-    
         for(i=1:length(parameter_cd)) 
         {
             print(num2str(j)+","+num2str(i)+ " of " + num2str(length(parameter_thick))+","+num2str(length(parameter_cd)));              
@@ -214,7 +219,7 @@ for (k=1:length(DC_length_arr))
 }
 
 draw_wavelength1=1;
-draw_wavelength2=0;
+draw_wavelength2=1;
 if(draw_wavelength1==1){
 #three images for wavelength1; split out wavelength
 image(DC_length_ratio,parameter_thick,coupling_efficiency(1,:,:),

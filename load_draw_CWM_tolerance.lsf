@@ -1,0 +1,68 @@
+switchtolayout;
+nm = 1e-9;
+um = 1e-6;
+mm = 1e-3;
+format long;
+
+#RG splitter
+device_name = "Waveguide";
+wg_gap = 1141*nm;
+wg_thickness = 50*nm;
+wg_width = 500*nm;
+wavelength1 = 635*nm;       # target wavelength to split out 
+wavelength2 = 518*nm;       # wavelength to test the leakage 
+
+# #GB splitter
+# device_name = "Waveguide";
+# wg_gap = 1141*nm;
+# wg_thickness = 50*nm;
+# wg_width = 399*nm;
+# wavelength1 = 518*nm;       # target wavelength to split out 
+# wavelength2 = 450*nm;      # wavelength to test the leakage 
+
+#parameter array
+parameter_name = "shift_CD";
+parameter_cd = linspace(-35,-25,3)*nm; 
+parameter_name_2 = "shift_thickness";
+parameter_thick = linspace(-5,-2,8)*nm; 
+DC_length_ratio=linspace(0.92,1.06,8);
+
+filelocation="/home/hpcuser/cloud_storage/Qingjun Wang/CWM/Simulation files/";
+matlabload(filelocation+"Coupling_efficiency_for_wl_"+num2str(round(wavelength1*1e9))+"nm"+"_CD_shift_All.mat");  
+
+draw_wavelength1=0;
+draw_wavelength2=1;
+if(draw_wavelength1==1){
+#three images for wavelength1; split out wavelength
+image(DC_length_ratio,parameter_thick,coupling_efficiency(1,:,:),
+"DC_length_ratio","thickness","Coupling efficiency for wl="+num2str(round(wavelength1*1e9))+"nm"+"_CD shift_"+num2str(round(parameter_cd(1)*1e9)));
+image(DC_length_ratio,parameter_thick,coupling_efficiency(2,:,:),
+"DC_length_ratio","thickness","Coupling efficiency for wl="+num2str(round(wavelength1*1e9))+"nm"+"_CD shift_"+num2str(round(parameter_cd(2)*1e9)));
+image(DC_length_ratio,parameter_thick,coupling_efficiency(3,:,:),
+"DC_length_ratio","thickness","Coupling efficiency for wl="+num2str(round(wavelength1*1e9))+"nm"+"_CD shift_"+num2str(round(parameter_cd(3)*1e9)));
+}
+if(draw_wavelength2==1){
+#three images for wavelength2; keep propogate wavelength
+image(DC_length_ratio,parameter_thick,1-leakage(1,:,:),
+"DC_length_ratio","thickness","Coupling efficiency for wl="+num2str(round(wavelength2*1e9))+"nm"+"_CD shift_"+num2str(round(parameter_cd(1)*1e9)));
+image(DC_length_ratio,parameter_thick,1-leakage(2,:,:),
+"DC_length_ratio","thickness","Coupling efficiency for wl="+num2str(round(wavelength2*1e9))+"nm"+"_CD shift_"+num2str(round(parameter_cd(2)*1e9)));
+image(DC_length_ratio,parameter_thick,1-leakage(3,:,:),
+"DC_length_ratio","thickness","Coupling efficiency for wl="+num2str(round(wavelength2*1e9))+"nm"+"_CD shift_"+num2str(round(parameter_cd(3)*1e9)));
+}
+
+#draw a line for the target CD and thickness
+draw_wavelength1_line=1;
+draw_wavelength2_line=1;
+target_cd_value = -25*nm; # no.3
+cd_value=3;
+target_thick_value = -2*nm; # no.8
+thick=8;
+if(draw_wavelength1_line==1){
+plotxy(DC_length_ratio,coupling_efficiency(3,:,8),
+"DC_length_ratio","Coupling efficiency","wl="+num2str(round(wavelength1*1e9))+"nm"+"_CD shift"+num2str(round(parameter_cd(cd_value)*1e9))+"nm_thickness"+num2str(round(parameter_thick(thick)*1e9))+"nm");
+}
+if(draw_wavelength2_line==1){
+plotxy(DC_length_ratio,(1-leakage(3,:,8)),
+"DC_length_ratio","Coupling efficiency","wl="+num2str(round(wavelength2*1e9))+"nm"+"_CD shift"+num2str(round(parameter_cd(cd_value)*1e9))+"nm_thickness"+num2str(round(parameter_thick(thick)*1e9))+"nm");
+}
